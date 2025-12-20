@@ -4,7 +4,7 @@ from sqlalchemy import ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 from typing_extensions import Annotated
 
-from src.base_models.base_classes import Base, IDMixin
+from src.models.base_classes import Base, IDMixin
 
 client_fk = Annotated[int, mapped_column(ForeignKey('clients.id'))]
 

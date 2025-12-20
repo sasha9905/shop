@@ -22,3 +22,13 @@ class OrderRepository(BaseRepository):
             )
         )
         return result.scalar_one_or_none()
+
+_order_repo = None
+
+def get_order_repo():
+    global _order_repo
+
+    if _order_repo is None:
+        _order_repo = OrderRepository
+
+    return _order_repo

@@ -2,7 +2,7 @@ from typing import Optional
 
 from sqlalchemy.orm import relationship, Mapped
 
-from src.base_models.base_classes import Base, IDMixin, NameMixin
+from src.models.base_classes import Base, IDMixin, NameMixin
 
 
 class Client(Base, IDMixin, NameMixin):

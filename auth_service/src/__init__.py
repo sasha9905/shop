@@ -1,11 +1,7 @@
-from src.base_models import Base
-from src.models import *
+from src.api import router
+from src.database import db_dependency_instance
 
 __all__ = [
-    "Base",
-    "Client",
-    "Category",
-    "OrderItem",
-    "Order",
-    "Product",
+    "router",
+    "db_dependency_instance",
 ]

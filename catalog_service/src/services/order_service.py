@@ -1,7 +1,7 @@
-from src.repositories.order_repository import OrderRepository
-from src.repositories.product_repository import ProductRepository
+from src.repositories import OrderRepository
+from src.repositories import ProductRepository
 from src.models import OrderItem
-from src.exceptions.exceptions import NotFoundError, InsufficientStockError, BusinessRuleError
+from src.exceptions import NotFoundError, InsufficientStockError, BusinessRuleError
 from src.schemas.order import UpdateOrderDTO
 
 
@@ -76,3 +76,13 @@ class OrderService:
 
         # Обновляем общее количество в заказе
         order.total_quantity += quantity
+
+_order_services = None
+
+def get_order_services():
+    global _order_services
+
+    if _order_services is None:
+        _order_services = OrderService
+
+    return _order_services

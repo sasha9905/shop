@@ -14,3 +14,13 @@ class ProductRepository(BaseRepository):
             select(Product).where(Product.id == product_id)
         )
         return result.scalar_one_or_none()
+
+_product_repo = None
+
+def get_product_repo():
+    global _product_repo
+
+    if _product_repo is None:
+        _product_repo = ProductRepository
+
+    return _product_repo

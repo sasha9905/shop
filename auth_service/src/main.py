@@ -3,20 +3,19 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
-from api import router as api_router
-from db_dependency import db_dependency
+from src import db_dependency_instance, router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Creating tables...")
-    await db_dependency.table_creating()
+    await db_dependency_instance.table_creating()
     yield
 
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(api_router)
+app.include_router(router)
 
 
 if __name__ == "__main__":

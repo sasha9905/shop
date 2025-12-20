@@ -2,14 +2,14 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
-from db_dependency import db_dependency
-from src.repositories.order_repository import OrderRepository
-from src.repositories.product_repository import ProductRepository
-from src.services.order_service import OrderService
+from src.database import db_dependency_instance
+from src.repositories import OrderRepository
+from src.repositories import ProductRepository
+from src.services import OrderService
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    async for session in db_dependency.get_session():
+    async for session in db_dependency_instance.get_session():
         yield session
 
 

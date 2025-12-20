@@ -2,7 +2,7 @@ from sqlalchemy import UniqueConstraint, ForeignKey
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 from typing_extensions import Annotated
 
-from src.base_models.base_classes import Base, IDMixin
+from src.models.base_classes import Base, IDMixin
 
 order_fk = Annotated[int, mapped_column(ForeignKey('orders.id', ondelete='CASCADE'))]
 product_fk = Annotated[int, mapped_column(ForeignKey('products.id', ondelete='CASCADE'))]

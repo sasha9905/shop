@@ -3,7 +3,7 @@ import traceback
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.dependencies import get_order_service
-from src.exceptions.exceptions import NotFoundError, InsufficientStockError
+from src.exceptions import NotFoundError, InsufficientStockError
 from src.schemas.order import UpdateOrderDTO
 from src.services.order_service import OrderService
 

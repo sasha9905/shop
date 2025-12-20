@@ -4,7 +4,7 @@ from typing_extensions import Annotated
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from src.base_models.base_classes import Base, IDMixin, NameMixin
+from src.models.base_classes import Base, IDMixin, NameMixin
 
 parent_fk = Annotated[int, mapped_column(ForeignKey('categories.id'))]
 

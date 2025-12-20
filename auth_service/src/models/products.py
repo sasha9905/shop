@@ -2,7 +2,7 @@ from sqlalchemy import ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 from typing_extensions import Annotated
 
-from src.base_models.base_classes import Base, IDMixin, NameMixin
+from src.models.base_classes import Base, IDMixin, NameMixin
 
 category_fk = Annotated[int, mapped_column(ForeignKey('categories.id'))]
 

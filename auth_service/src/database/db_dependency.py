@@ -2,12 +2,14 @@ from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from db_settings import db_settings
-from src.base_models.base_classes import Base
+from src.database.db_settings import get_db_settings
+from src.models import Base
+
+db_settings_instance = get_db_settings()
 
 class DBDependency:
     def __init__(self) -> None:
-        self._engine = create_async_engine(url=db_settings.db_url, echo=db_settings.db_echo)
+        self._engine = create_async_engine(url=db_settings_instance.db_url, echo=db_settings_instance.db_echo)
         self._session_factory = async_sessionmaker(
             bind=self._engine,
             expire_on_commit=False,
@@ -34,4 +36,12 @@ class DBDependency:
             print(Base.metadata.tables.keys())
 
 
-db_dependency = DBDependency()
+_db_dependency = None
+
+def get_db_dependency():
+    global _db_dependency
+
+    if _db_dependency is None:
+        _db_dependency = DBDependency()
+
+    return _db_dependency
