@@ -1,7 +1,8 @@
-from src.services.order_service import get_order_services, OrderService
+from src.services.auth_service import AuthService
+from src.services.user_service import UserService
 
-OrderService: OrderService = get_order_services()
 
 __all__ = [
-    "OrderService"
+    "AuthService",
+    "UserService",
 ]

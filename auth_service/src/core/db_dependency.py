@@ -2,10 +2,10 @@ from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from src.database.db_settings import get_db_settings
+from src.config import get_settings
 from src.models import Base
 
-db_settings_instance = get_db_settings()
+db_settings_instance = get_settings()
 
 class DBDependency:
     def __init__(self) -> None:
@@ -32,8 +32,8 @@ class DBDependency:
 
     async def table_creating(self) -> None:
         async with self._engine.begin() as connection:
-            #await connection.run_sync(Base.metadata.create_all)
-            print(Base.metadata.tables.keys())
+            await connection.run_sync(Base.metadata.create_all)
+            #print(Base.metadata.tables.keys())
 
 
 _db_dependency = None
