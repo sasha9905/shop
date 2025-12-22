@@ -1,8 +1,8 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core import get_db_session, get_current_user, get_current_admin
+from src.core import get_db_session, get_current_user, get_current_admin, publish_event
 from src.schemas import UserResponse, UserUpdate
 from src.services import UserService
 from src.models import User

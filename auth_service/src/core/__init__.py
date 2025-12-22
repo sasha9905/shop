@@ -1,5 +1,6 @@
 from src.core.dependencies import *
 from src.core.security import *
+from src.core.events import publish_event, broker, start_event_consumer
 
 __all__ = [
     # depends
@@ -13,4 +14,8 @@ __all__ = [
     "get_password_hash",
     "create_access_token",
     "decode_token",
+
+    "publish_event",
+    "broker",
+    "start_event_consumer",
 ]

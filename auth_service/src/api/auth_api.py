@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core import get_db_session
+from src.core import get_db_session, publish_event
 from src.schemas import Token, LoginRequest
 from src.schemas import UserCreate, UserResponse
 from src.services import AuthService
@@ -34,6 +34,15 @@ async def register(
 
     # Create new user
     user = await user_service.create_user(user_data)
+
+    # Отправка события в RabbitMQ
+    await publish_event("user.created", {
+        "id": str(user.id),
+        "email": user.email,
+        "username": user.username,
+        "role": user.role
+    })
+
     return user
 
 
@@ -56,4 +65,20 @@ async def login(
         )
 
     token = await auth_service.create_token(user)
+
+    await publish_event("user.logged_in", {
+        "user_id": str(user.id),
+        "token": token
+    })
+
     return token
+
+# Верификация токена (для других сервисов)
+@router.post("/verify")
+async def verify_token(token: str, session: AsyncSession = Depends(get_db_session)):
+    auth_service = AuthService(session)
+
+    payload = auth_service.verify_token(token)
+    if payload:
+        return {"valid": True, "user_id": payload["sub"], "role": payload["role"]}
+    return {"valid": False}
