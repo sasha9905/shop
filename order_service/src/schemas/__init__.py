@@ -1,5 +1,8 @@
-from src.schemas.order import UpdateOrderDTO
+from src.schemas.DTO import *
 
 __all__ = [
+    "ProductAddDTO",
+    "OrderItemAddDTO",
+    "OrderAddDTO",
     "UpdateOrderDTO",
 ]

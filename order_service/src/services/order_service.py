@@ -2,7 +2,7 @@ from src.repositories import OrderRepository
 from src.repositories import ProductRepository
 from src.models import OrderItem
 from src.exceptions import NotFoundError, InsufficientStockError, BusinessRuleError
-from src.schemas.order import UpdateOrderDTO
+from src.schemas.DTO import UpdateOrderDTO
 
 
 class OrderService:

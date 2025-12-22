@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from src.api.update_order import router as change_order_router
+from src.api.order_api import router as change_order_router
 
 
 router = APIRouter()
