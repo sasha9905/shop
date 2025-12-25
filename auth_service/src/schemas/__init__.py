@@ -7,6 +7,10 @@ __all__ = [
     "UserUpdate",
     "UserResponse",
 
+    # event
+    "UserEventID",
+    "UserEvent",
+
     # toker
     "Token",
     "TokenPayload",

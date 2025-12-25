@@ -1,13 +1,20 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from faststream.rabbit.fastapi import RabbitRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core import get_db_session, publish_event
-from src.schemas import Token, LoginRequest
-from src.schemas import UserCreate, UserResponse
-from src.services import AuthService
-from src.services import UserService
+from src.core import get_db_session
+from src.config import get_settings
+from src.schemas import Token, LoginRequest, UserCreate, UserResponse, UserEvent
+from src.services import AuthService, UserService
 
-router = APIRouter(prefix="/auth", tags=["authentication"])
+#router = APIRouter(prefix="/auth", tags=["authentication"])
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+settings = get_settings()
+router = RabbitRouter(settings.rabbitmq_url)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -35,13 +42,15 @@ async def register(
     # Create new user
     user = await user_service.create_user(user_data)
 
+    user_event = UserEvent(
+        id=user.id,
+        username=user.username,
+        role=user.role
+    )
+
     # Отправка события в RabbitMQ
-    await publish_event("user.created", {
-        "id": str(user.id),
-        "email": user.email,
-        "username": user.username,
-        "role": user.role
-    })
+    logger.info("User created successfully!")
+    await router.broker.publish(message=user_event.model_dump(), queue="user.created")
 
     return user
 
@@ -66,11 +75,7 @@ async def login(
 
     token = await auth_service.create_token(user)
 
-    await publish_event("user.logged_in", {
-        "user_id": str(user.id),
-        "token": token
-    })
-
+    logger.info("User logged in successfully!")
     return token
 
 # Верификация токена (для других сервисов)

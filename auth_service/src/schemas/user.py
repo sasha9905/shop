@@ -30,3 +30,12 @@ class UserInDB(UserBase):
 
 class UserResponse(UserInDB):
     pass
+
+
+class UserEventID(BaseModel):
+    id: uuid.UUID
+
+
+class UserEvent(UserEventID):
+    username: str
+    role: UserRole
