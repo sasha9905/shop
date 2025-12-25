@@ -2,15 +2,18 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.dependencies import get_db_session
+from src.core import get_db_session, get_current_admin
 from src.schemas import ProductAddDTO
-from src.models import Category, Product
+from src.models import Category, Product, User
 
 router = APIRouter()
 
 
 @router.post("/product")
-async def create_product(data: ProductAddDTO, session: AsyncSession = Depends(get_db_session)):
+async def create_product(data: ProductAddDTO,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_admin)
+):
     result = await session.execute(
         select(Category).where(Category.id == data.category_id)
     )

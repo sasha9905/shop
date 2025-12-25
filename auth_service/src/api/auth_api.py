@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
-router = RabbitRouter(settings.rabbitmq_url)
+router = RabbitRouter(settings.rabbitmq_url, prefix="/auth")
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -82,8 +82,19 @@ async def login(
 @router.post("/verify")
 async def verify_token(token: str, session: AsyncSession = Depends(get_db_session)):
     auth_service = AuthService(session)
+    logger.info("Token is received successfully!")
 
-    payload = auth_service.verify_token(token)
-    if payload:
-        return {"valid": True, "user_id": payload["sub"], "role": payload["role"]}
+    result = await auth_service.verify_token(token)
+
+    if result:
+        logger.info("Token is valid!")
+        user, payload = result  # Распаковываем результат
+        return {
+            "valid": True,
+            "user_id": str(user.id),
+            "role": user.role.value,
+            "username": user.username
+        }
+
+    logger.warning("Token is invalid!")
     return {"valid": False}

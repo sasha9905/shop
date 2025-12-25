@@ -2,15 +2,18 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.dependencies import get_db_session
-from src.schemas.DTO import CategoryAddDTO
-from src.models import Category
+from src.core import get_db_session, get_current_admin
+from src.schemas import CategoryAddDTO
+from src.models import Category, User
 
 router = APIRouter()
 
 
 @router.post("/category")
-async def add_category(data: CategoryAddDTO, session: AsyncSession = Depends(get_db_session)):
+async def add_category(data: CategoryAddDTO,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_admin)
+):
     level = 0
     if data.parent_id == 0 or not data.parent_id:
         data.parent_id = None

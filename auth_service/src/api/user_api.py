@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
-router = RabbitRouter(settings.rabbitmq_url)
+router = RabbitRouter(settings.rabbitmq_url, prefix="/users")
 #router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me", response_model=UserResponse)

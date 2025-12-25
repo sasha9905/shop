@@ -2,7 +2,7 @@ import logging
 
 from fastapi import Depends, HTTPException, status
 
-from src.dependencies import get_user_service
+from src.core import get_user_service
 from faststream.rabbit.fastapi import RabbitRouter
 
 from src.config import get_settings
