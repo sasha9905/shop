@@ -15,7 +15,7 @@ class Order(Base, IDMixin):
     user_id: Mapped[client_fk]
     total_quantity: Mapped[int]
 
-    user: Mapped["Client"] = relationship(back_populates="orders")
+    user: Mapped["User"] = relationship(back_populates="orders")
 
     product_items: Mapped[list["OrderItem"]] = relationship(
         back_populates="order",

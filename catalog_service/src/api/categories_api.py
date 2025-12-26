@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core import get_db_session, get_current_admin
+from src.core import get_db_session, get_current_admin, get_current_user
 from src.schemas import CategoryAddDTO
 from src.models import Category, User
 
@@ -39,7 +39,8 @@ async def add_category(data: CategoryAddDTO,
 
 
 @router.get("/categories")
-async def get_all_categories(session: AsyncSession = Depends(get_db_session)):
+async def get_all_categories(session: AsyncSession = Depends(get_db_session),
+        user: User = Depends(get_current_user)):
     result = await session.execute(select(Category))
     result = result.scalars().all()
 

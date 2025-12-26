@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.dependencies import get_order_service, get_db_session
+from src.core import get_order_service, get_db_session, get_current_user
 from src.schemas import UpdateOrderDTO, OrderAddDTO
 from src.models import User, Product, Order, OrderItem
 from src.services.order_service import OrderService
@@ -16,7 +16,8 @@ router = APIRouter()
 @router.put("/update_order/{order_id}")
 async def update_order(
         data: UpdateOrderDTO,
-        order_service: OrderService = Depends(get_order_service)
+        order_service: OrderService = Depends(get_order_service),
+        user: User = Depends(get_current_user)
 ):
     try:
         result = await order_service.update_order_item(data)
@@ -36,7 +37,11 @@ async def update_order(
 
 
 @router.post("/order")
-async def add_order(data: OrderAddDTO, session: AsyncSession = Depends(get_db_session)):
+async def add_order(
+        data: OrderAddDTO,
+        session: AsyncSession = Depends(get_db_session),
+        user: User = Depends(get_current_user)
+):
     client_result = await session.execute(
         select(User).where(User.id == data.client_id)
     )
@@ -44,9 +49,6 @@ async def add_order(data: OrderAddDTO, session: AsyncSession = Depends(get_db_se
 
     if not user:
         return {"detail": "Client not found"}
-
-    if data.created_at:
-        created_at = data.created_at
 
     order = Order(
         user_id=data.client_id,
@@ -107,7 +109,11 @@ async def add_order(data: OrderAddDTO, session: AsyncSession = Depends(get_db_se
 
 
 @router.get("/order/{order_id}")
-async def get_order(order_id: int, session: AsyncSession = Depends(get_db_session)):
+async def get_order(
+        order_id: int,
+        session: AsyncSession = Depends(get_db_session),
+        user: User = Depends(get_current_user)
+):
     result = await session.execute(
         select(Order).where(Order.id == order_id)
     )
