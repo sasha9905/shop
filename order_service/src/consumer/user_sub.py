@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import Depends, HTTPException, status
+from faststream.rabbit import RabbitExchange, ExchangeType
 
 from src.core import get_user_service
 from faststream.rabbit.fastapi import RabbitRouter
@@ -16,7 +17,10 @@ settings = get_settings()
 router = RabbitRouter(settings.rabbitmq_url)
 
 # Подписчик на события от auth-service
-@router.subscriber("user.created")
+@router.subscriber(
+    exchange=RabbitExchange(name="user_created", type=ExchangeType.FANOUT),
+    queue="",
+)
 async def handle_user_created(
         user_data: UserAll, user_service:
         UserService = Depends(get_user_service)
@@ -37,7 +41,10 @@ async def handle_user_created(
     logger.info("User created successfully!")
 
 
-@router.subscriber("user.updated")
+@router.subscriber(
+    exchange=RabbitExchange(name="user_updated", type=ExchangeType.FANOUT),
+    queue="",
+)
 async def handle_user_created(
         user_data: UserAll, user_service:
         UserService = Depends(get_user_service)
@@ -61,7 +68,10 @@ async def handle_user_created(
     logger.info("User updated successfully!")
 
 
-@router.subscriber("user.deleted")
+@router.subscriber(
+    exchange=RabbitExchange(name="user_deleted", type=ExchangeType.FANOUT),
+    queue="",
+)
 async def handle_user_created(
         user: UserBase,
         user_service: UserService = Depends(get_user_service)

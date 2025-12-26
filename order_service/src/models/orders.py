@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, DateTime, func
@@ -6,7 +7,7 @@ from typing_extensions import Annotated
 
 from src.models.base_classes import Base, IDMixin
 
-client_fk = Annotated[int, mapped_column(ForeignKey('users.id'))]
+client_fk = Annotated[uuid.UUID, mapped_column(ForeignKey('users.id'))]
 
 
 class Order(Base, IDMixin):

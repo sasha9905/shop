@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from faststream.rabbit import RabbitExchange, ExchangeType
 from faststream.rabbit.fastapi import RabbitRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,7 +51,10 @@ async def register(
 
     # Отправка события в RabbitMQ
     logger.info("User created successfully!")
-    await router.broker.publish(message=user_event.model_dump(), queue="user.created")
+    await router.broker.publish(
+        message=user_event.model_dump(),
+        exchange=RabbitExchange(name="user_created", type=ExchangeType.FANOUT),
+    )
 
     return user
 

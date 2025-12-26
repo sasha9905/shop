@@ -1,6 +1,6 @@
 import traceback
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -42,8 +42,10 @@ async def add_order(
         session: AsyncSession = Depends(get_db_session),
         user: User = Depends(get_current_user)
 ):
+    # data_str = await data.body()
+    # print(data_str.decode('utf-8'), type(data_str.decode('utf-8')))
     client_result = await session.execute(
-        select(User).where(User.id == data.client_id)
+        select(User).where(User.id == data.user_id)
     )
     user = client_result.scalar_one_or_none()
 
@@ -51,7 +53,7 @@ async def add_order(
         return {"detail": "Client not found"}
 
     order = Order(
-        user_id=data.client_id,
+        user_id=data.user_id,
         total_quantity=sum(item.quantity for item in data.items)
     )
 
@@ -90,10 +92,9 @@ async def add_order(
 
     return {
         "id": order.id,
-        "client_id": order.client_id,
-        "client_name": user.name,
+        "user_id": order.user_id,
+        "client_name": user.username,
         "user_quantity": order.total_quantity,
-        "created_at": order.created_at,
         "items": [
             {
                 "id": item.id,

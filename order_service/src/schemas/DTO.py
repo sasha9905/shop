@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -7,7 +8,6 @@ class ProductAddDTO(BaseModel):
     name: str
     quantity: int
     price: int
-    category_id: int
 
 
 class OrderItemAddDTO(BaseModel):
@@ -16,7 +16,7 @@ class OrderItemAddDTO(BaseModel):
 
 
 class OrderAddDTO(BaseModel):
-    client_id: int
+    user_id: str
     created_at: datetime
     items: list[OrderItemAddDTO]
 

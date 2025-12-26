@@ -1,12 +1,20 @@
+import logging
+
 from fastapi import APIRouter, Depends
+from faststream.rabbit.fastapi import RabbitRouter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config import get_settings
 from src.core import get_db_session, get_current_admin, get_current_user
 from src.schemas import ProductAddDTO
 from src.models import Category, Product, User
 
-router = APIRouter()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+settings = get_settings()
+router = RabbitRouter(settings.rabbitmq_url)
 
 
 @router.post("/product")
@@ -29,10 +37,19 @@ async def create_product(data: ProductAddDTO,
         storage_quantity=data.quantity,
         category_id=data.category_id
     )
-
     session.add(product)
     await session.commit()
     await session.refresh(product)
+
+    product_DTO = ProductAddDTO(
+        name=product.name,
+        price=product.price,
+        quantity=product.storage_quantity,
+        category_id=product.category_id
+    )
+    await router.broker.publish(
+        message=product_DTO.model_dump(), queue="product.created")
+    logger.info("Product is sent to order service!")
 
     return product
 

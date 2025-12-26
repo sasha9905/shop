@@ -3,6 +3,7 @@ from typing import List
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from faststream.rabbit import RabbitExchange, ExchangeType
 from faststream.rabbit.fastapi import RabbitRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -90,7 +91,7 @@ async def update_user_me(
     )
 
     logger.info("User updated successfully!")
-    await router.broker.publish(message=user_event.model_dump(), queue='user.updated')
+    await router.broker.publish(message=user_event.model_dump(), exchange=RabbitExchange(name="user_updated", type=ExchangeType.FANOUT))
 
     return updated_user
 
@@ -112,5 +113,5 @@ async def delete_user(
     user_event_id = UserEventID(id=uuid.UUID(user_id))
 
     logger.info("User deleted successfully!")
-    await router.broker.publish(message=user_event_id.model_dump(), queue="user.deleted")
+    await router.broker.publish(message=user_event_id.model_dump(), exchange=RabbitExchange(name="user_deleted", type=ExchangeType.FANOUT))
     return {"message": "Ok"}

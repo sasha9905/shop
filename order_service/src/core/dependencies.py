@@ -32,7 +32,6 @@ async def get_current_user(token: str = Depends(security)):
         raise HTTPException(status_code=401, detail="Invalid token")
     user = User(
         id=result.get("user_id"),
-        role=result.get("role"),
         username=result.get("username")
     )
     return user
