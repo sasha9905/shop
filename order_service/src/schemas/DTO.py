@@ -16,7 +16,7 @@ class OrderItemAddDTO(BaseModel):
 
 
 class OrderAddDTO(BaseModel):
-    user_id: str
+    user_id: uuid.UUID
     created_at: datetime
     items: list[OrderItemAddDTO]
 

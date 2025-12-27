@@ -19,7 +19,7 @@ router = RabbitRouter(settings.rabbitmq_url)
 # Подписчик на события от auth-service
 @router.subscriber(
     exchange=RabbitExchange(name="user_created", type=ExchangeType.FANOUT),
-    queue="",
+    queue="catalog_user_created",
 )
 async def handle_user_created(user_data: UserAll, user_service: UserService = Depends(get_user_service)
 ):
@@ -40,7 +40,7 @@ async def handle_user_created(user_data: UserAll, user_service: UserService = De
 
 @router.subscriber(
     exchange=RabbitExchange(name="user_updated", type=ExchangeType.FANOUT),
-    queue="",
+    queue="catalog_user_updated",
 )
 async def handle_user_created(user_data: UserAll, user_service: UserService = Depends(get_user_service)):
     """Обработка события создания пользователя"""
@@ -64,7 +64,7 @@ async def handle_user_created(user_data: UserAll, user_service: UserService = De
 
 @router.subscriber(
     exchange=RabbitExchange(name="user_deleted", type=ExchangeType.FANOUT),
-    queue="",
+    queue="catalog_user_deleted",
 )
 async def handle_user_created(user: UserBase, user_service: UserService = Depends(get_user_service)):
     """Обработка события создания пользователя"""
