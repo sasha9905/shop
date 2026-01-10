@@ -1,148 +1,252 @@
-import traceback
+from fastapi import APIRouter, Depends, HTTPException
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
-from src.core import get_order_service, get_db_session, get_current_user
-from src.schemas import UpdateOrderDTO, OrderAddDTO
-from src.models import User, Product, Order, OrderItem
+from src.core import get_order_service, get_user_service
+from src.core.logging_config import logger
+from src.schemas import (
+    UpdateOrderDTO,
+    OrderAddDTO,
+    OrderResponseDTO,
+    OrderDetailResponseDTO,
+    OrderUpdateResponseDTO,
+    OrderItemResponseDTO,
+    OrderItemUpdateResponseDTO,
+    OrdersListResponseDTO
+)
 from src.services.order_service import OrderService
+from src.services.user_service import UserService
+from src.exceptions import NotFoundError, InsufficientStockError, BusinessRuleError
 
 router = APIRouter()
 
 
-@router.put("/update_order/{order_id}")
-async def update_order(
-        data: UpdateOrderDTO,
+@router.post("/order", response_model=OrderResponseDTO)
+async def add_order(
+        data: OrderAddDTO,
         order_service: OrderService = Depends(get_order_service),
-        user: User = Depends(get_current_user)
+        user_service: UserService = Depends(get_user_service),
+        #user: User = Depends(get_current_user)
 ):
+    """
+    Создать новый заказ
+    
+    Args:
+        data: Данные для создания заказа (user_id, items)
+        order_service: Сервис для работы с заказами
+        user_service: Сервис для работы с пользователями
+        user: Текущий авторизованный пользователь
+        
+    Returns:
+        OrderResponseDTO: Созданный заказ с информацией о товарах
+        
+    Raises:
+        HTTPException 404: Если пользователь или товар не найдены
+        HTTPException 400: Если недостаточно товара на складе или нарушены бизнес-правила
+    """
     try:
-        result = await order_service.update_order_item(data)
-        return {
-            "message": "Order updated successfully",
-            "order_item": {
-                "id": result.id,
-                "order_id": result.order_id,
-                "product_id": result.product_id,
-                "quantity": result.product_quantity
-            }
-        }
+        # Проверяем существование пользователя
+        client = await user_service.get_user_by_id(data.user_id)
+        if not client:
+            raise NotFoundError("Client not found")
 
-    except Exception:
-        print(traceback.format_exc())
+        # Создаем заказ через сервис
+        order = await order_service.create_order(data)
+
+        return OrderResponseDTO(
+            id=order.id,
+            user_id=order.user_id,
+            client_name=order.user.username,
+            user_quantity=order.total_quantity,
+            items=[
+                OrderItemResponseDTO(
+                    id=item.id,
+                    order_id=item.order_id,
+                    product_id=item.product_id,
+                    product_name=item.product.name,
+                    quantity=item.product_quantity,
+                    price=item.product.price
+                )
+                for item in order.product_items
+            ]
+        )
+    except NotFoundError as e:
+        logger.warning(f"Order creation failed: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except InsufficientStockError as e:
+        logger.warning(f"Order creation failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except BusinessRuleError as e:
+        logger.warning(f"Order creation failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in add_order: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/order")
-async def add_order(
-        data: OrderAddDTO,
-        session: AsyncSession = Depends(get_db_session),
-        user: User = Depends(get_current_user)
-):
-    # data_str = await data.body()
-    # print(data_str.decode('utf-8'), type(data_str.decode('utf-8')))
-    client_result = await session.execute(
-        select(User).where(User.id == data.user_id)
-    )
-    user = client_result.scalar_one_or_none()
-
-    if not user:
-        return {"detail": "Client not found"}
-
-    order = Order(
-        user_id=data.user_id,
-        total_quantity=sum(item.quantity for item in data.items)
-    )
-
-    session.add(order)
-    await session.flush()  # Получаем ID заказа без коммита
-
-    # Добавляем элементы заказа
-    order_items = []
-    for item_data in data.items:
-        product_result = await session.execute(
-            select(Product).where(Product.id == item_data.product_id)
-        )
-        product = product_result.scalar_one_or_none()
-
-        if not product:
-            return {"detail": f"Product with id {item_data.product_id} not found"}
-
-        order_item = OrderItem(
-            order_id=order.id,
-            product_id=item_data.product_id,
-            product_quantity=item_data.quantity
-        )
-
-        session.add(order_item)
-        order_items.append(order_item)
-
-    await session.commit()
-
-    result = await session.execute(
-        select(Order).where(Order.id == order.id).options(
-            selectinload(Order.user),
-            selectinload(Order.product_items).selectinload(OrderItem.product)
-        )
-    )
-    order = result.scalar_one()
-
-    return {
-        "id": order.id,
-        "user_id": order.user_id,
-        "client_name": user.username,
-        "user_quantity": order.total_quantity,
-        "items": [
-            {
-                "id": item.id,
-                "order_id": item.order_id,
-                "product_id": item.product_id,
-                "product_name": item.product.name,
-                "quantity": item.product_quantity,
-                "price": item.product.price
-            }
-            for item in order_items
-        ]
-    }
-
-
-@router.get("/order/{order_id}")
+@router.get("/order/{order_id}", response_model=OrderDetailResponseDTO)
 async def get_order(
         order_id: int,
-        session: AsyncSession = Depends(get_db_session),
-        user: User = Depends(get_current_user)
+        order_service: OrderService = Depends(get_order_service),
+        #user: User = Depends(get_current_user)
 ):
-    result = await session.execute(
-        select(Order).where(Order.id == order_id)
-    )
-    order = result.scalar_one_or_none()
+    """
+    Получить заказ по ID
+    
+    Args:
+        order_id: ID заказа
+        order_service: Сервис для работы с заказами
+        user: Текущий авторизованный пользователь
+        
+    Returns:
+        OrderDetailResponseDTO: Детальная информация о заказе с товарами
+        
+    Raises:
+        HTTPException 404: Если заказ не найден
+    """
+    try:
+        order = await order_service.get_order_by_id(order_id)
 
-    if not order:
-        return {"detail": "Order not found"}
+        return OrderDetailResponseDTO(
+            id=order.id,
+            client_id=order.user_id,
+            client_name=order.user.username,
+            total_quantity=order.total_quantity,
+            items=[
+                OrderItemResponseDTO(
+                    id=item.id,
+                    order_id=item.order_id,
+                    product_id=item.product_id,
+                    product_name=item.product.name,
+                    quantity=item.product_quantity,
+                    price=item.product.price
+                )
+                for item in order.product_items
+            ]
+        )
+    except NotFoundError as e:
+        logger.warning(f"Order retrieval failed: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in get_order: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-    # Явно загружаем связанные данные
-    await session.refresh(order, ['client', 'product_items'])
-    for item in order.product_items:
-        await session.refresh(item, ['product'])
 
-    return {
-        "id": order.id,
-        "client_id": order.client_id,
-        "client_name": order.client.name,
-        "total_quantity": order.total_quantity,
-        "created_at": order.created_at,
-        "items": [
-            {
-                "id": item.id,
-                "order_id": item.order_id,
-                "product_id": item.product_id,
-                "product_name": item.product.name,
-                "quantity": item.product_quantity,
-                "price": item.product.price
-            }
-            for item in order.product_items
-        ]
-    }
+@router.get("/orders", response_model=OrdersListResponseDTO)
+async def get_all_orders(
+        skip: int = 0,
+        limit: int = 100,
+        order_service: OrderService = Depends(get_order_service),
+        #user: User = Depends(get_current_user)
+):
+    """
+    Получить список всех заказов с пагинацией
+    
+    Args:
+        skip: Количество записей для пропуска (по умолчанию 0)
+        limit: Максимальное количество записей (по умолчанию 100)
+        order_service: Сервис для работы с заказами
+        user: Текущий авторизованный пользователь
+        
+    Returns:
+        OrdersListResponseDTO: Список заказов с общей информацией
+    """
+    try:
+        orders = await order_service.get_all_orders(skip, limit)
+        
+        return OrdersListResponseDTO(
+            orders=[
+                OrderDetailResponseDTO(
+                    id=order.id,
+                    client_id=order.user_id,
+                    client_name=order.user.username,
+                    total_quantity=order.total_quantity,
+                    items=[
+                        OrderItemResponseDTO(
+                            id=item.id,
+                            order_id=item.order_id,
+                            product_id=item.product_id,
+                            product_name=item.product.name,
+                            quantity=item.product_quantity,
+                            price=item.product.price
+                        )
+                        for item in order.product_items
+                    ]
+                )
+                for order in orders
+            ],
+            total=len(orders)
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in get_all_orders: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/update_order/{order_id}", response_model=OrderUpdateResponseDTO)
+async def update_order(
+        data: UpdateOrderDTO,
+        order_service: OrderService = Depends(get_order_service),
+):
+    """
+    Обновить количество товара в заказе
+
+    Args:
+        data: Данные для обновления заказа (order_id, product_id, quantity)
+        order_service: Сервис для работы с заказами
+        user: Текущий авторизованный пользователь
+
+    Returns:
+        OrderUpdateResponseDTO: Результат обновления заказа
+
+    Raises:
+        HTTPException 404: Если заказ, товар или элемент заказа не найдены
+        HTTPException 400: Если недостаточно товара на складе или нарушены бизнес-правила
+    """
+    try:
+        result = await order_service.update_order_item(data)
+        return OrderUpdateResponseDTO(
+            message="Order updated successfully",
+            order_item=OrderItemUpdateResponseDTO(
+                id=result.id,
+                order_id=result.order_id,
+                product_id=result.product_id,
+                quantity=result.product_quantity
+            )
+        )
+    except NotFoundError as e:
+        logger.warning(f"Order update failed: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except InsufficientStockError as e:
+        logger.warning(f"Order update failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except BusinessRuleError as e:
+        logger.warning(f"Order update failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in update_order: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/delete_order/{order_id}")
+async def delete_order(
+        order_id: int,
+        order_service: OrderService = Depends(get_order_service),
+):
+    """
+    Удалить заказ
+
+    Args:
+        order_id: ID заказа
+        order_service: Сервис для работы с заказами
+
+    Raises:
+        HTTPException 404: Если заказ, товар или элемент заказа не найдены
+    """
+    try:
+        await order_service.delete_order(order_id)
+        return {"Status": "Ok"}
+
+    except NotFoundError as e:
+        logger.warning(f"Order update failed: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in update_order: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")

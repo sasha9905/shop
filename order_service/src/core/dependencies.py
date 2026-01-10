@@ -5,9 +5,9 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import User
-from src.services import UserService
+from src.services import UserService, ProductService
 from src.database import db_dependency_instance
-from src.repositories import OrderRepository
+from src.repositories import OrderRepository, UserRepository
 from src.repositories import ProductRepository
 from src.services import OrderService
 from src.core.security import verify_token_with_auth_service
@@ -19,11 +19,18 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def get_user_service(
+async def get_user_repository(
     session: AsyncSession = Depends(get_db_session)
+) -> UserRepository:
+    """Dependency для UserRepository"""
+    return UserRepository(session)
+
+
+async def get_user_service(
+    user_repo: UserRepository = Depends(get_user_repository)
 ) -> UserService:
     """Dependency для UserService"""
-    return UserService(session)
+    return UserService(user_repo)
 
 
 async def get_current_user(token: str = Depends(security)):
@@ -57,3 +64,10 @@ async def get_order_service(
 ) -> OrderService:
     """Dependency для OrderService"""
     return OrderService(order_repo, product_repo)
+
+
+async def get_product_service(
+    product_repo: ProductRepository = Depends(get_product_repository)
+) -> ProductService:
+    """Dependency для ProductService"""
+    return ProductService(product_repo)
