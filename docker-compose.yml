@@ -66,6 +66,8 @@ services:
        RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "${AUTH_SERVICE_PORT}:8000"
+    volumes:
+      - auth_service_logs:/app/logs
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
@@ -102,6 +104,8 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "${CATALOG_SERVICE_PORT}:8000"
+    volumes:
+      - catalog_service_logs:/app/logs
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
@@ -138,6 +142,8 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "${ORDER_SERVICE_PORT}:8000"
+    volumes:
+      - order_service_logs:/app/logs
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
@@ -165,6 +171,9 @@ volumes:
   rabbitmq_data:
   postgres_data:
   pgadmin_data:
+  auth_service_logs:
+  catalog_service_logs:
+  order_service_logs:
 
 networks:
   app-network:

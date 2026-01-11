@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from src.config import get_settings
+from src.core.logging_config import logger
 from src.models import Base
 
 db_settings_instance = get_settings()
@@ -15,12 +16,14 @@ class DBDependency:
             expire_on_commit=False,
             autocommit=False,
         )
+        logger.info("Database connection initialized successfully")
 
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
         async with self._session_factory() as session:
             try:
                 yield session
-            except Exception:
+            except Exception as e:
+                logger.error(f"Database session error: {str(e)}", exc_info=True)
                 await session.rollback()
                 raise
             finally:
@@ -31,9 +34,14 @@ class DBDependency:
         return self._session_factory
 
     async def table_creating(self) -> None:
-        async with self._engine.begin() as connection:
-            await connection.run_sync(Base.metadata.create_all)
-            #print(Base.metadata.tables.keys())
+        logger.info("Creating database tables...")
+        try:
+            async with self._engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+            logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Error creating database tables: {str(e)}", exc_info=True)
+            raise
 
 
 _db_dependency = None

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.core import get_order_service, get_user_service
+from src.core import get_order_service, get_user_service, get_current_user
 from src.core.logging_config import logger
+from src.models import User
 from src.schemas import (
     UpdateOrderDTO,
     OrderAddDTO,
@@ -24,7 +25,7 @@ async def add_order(
         data: OrderAddDTO,
         order_service: OrderService = Depends(get_order_service),
         user_service: UserService = Depends(get_user_service),
-        #user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     """
     Создать новый заказ
@@ -86,7 +87,7 @@ async def add_order(
 async def get_order(
         order_id: int,
         order_service: OrderService = Depends(get_order_service),
-        #user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     """
     Получить заказ по ID
@@ -135,7 +136,7 @@ async def get_all_orders(
         skip: int = 0,
         limit: int = 100,
         order_service: OrderService = Depends(get_order_service),
-        #user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user)
 ):
     """
     Получить список всех заказов с пагинацией
@@ -184,6 +185,7 @@ async def get_all_orders(
 async def update_order(
         data: UpdateOrderDTO,
         order_service: OrderService = Depends(get_order_service),
+        user: User = Depends(get_current_user)
 ):
     """
     Обновить количество товара в заказе
@@ -229,6 +231,7 @@ async def update_order(
 async def delete_order(
         order_id: int,
         order_service: OrderService = Depends(get_order_service),
+        user: User = Depends(get_current_user)
 ):
     """
     Удалить заказ
@@ -236,6 +239,7 @@ async def delete_order(
     Args:
         order_id: ID заказа
         order_service: Сервис для работы с заказами
+        user: Текущий авторизованный пользователь
 
     Raises:
         HTTPException 404: Если заказ, товар или элемент заказа не найдены

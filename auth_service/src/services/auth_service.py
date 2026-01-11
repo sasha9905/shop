@@ -1,8 +1,7 @@
 from datetime import timedelta
 from typing import Optional, Tuple
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.exceptions import NotFoundError, AuthenticationError
 from src.config import get_settings
 from src.models import User
 from src.schemas import Token
@@ -17,9 +16,18 @@ from src.services.user_service import UserService
 settings = get_settings()
 
 class AuthService:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.user_service = UserService(session)
+    """
+    Сервис для аутентификации
+    """
+    
+    def __init__(self, user_service: UserService):
+        """
+        Инициализация сервиса
+        
+        Args:
+            user_service: Сервис для работы с пользователями
+        """
+        self.user_service = user_service
 
     async def authenticate_user(
             self,
@@ -28,9 +36,11 @@ class AuthService:
     ) -> Optional[User]:
         user = await self.user_service.get_user_by_username(username)
         if not user:
-            return None
+            raise NotFoundError(f"User with id {user.id} not found")
+
         if not verify_password(password, user.password):
-            return None
+            raise AuthenticationError("Incorrect password")
+
         return user
 
     async def create_token(self, user: User) -> Token:

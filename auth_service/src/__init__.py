@@ -1,5 +1,7 @@
 from src.api import router
-from src.core import db_dependency_instance
+from src.core.db_dependency import get_db_dependency
+
+db_dependency_instance = get_db_dependency()
 
 __all__ = [
     "router",

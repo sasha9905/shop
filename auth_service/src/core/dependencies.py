@@ -1,14 +1,13 @@
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt, ExpiredSignatureError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.services import AuthService
+from src.repositories import UserRepository
+from src.services import AuthService, UserService
 from src.models import User, UserRole
 from src.core.db_dependency import get_db_dependency
-
 
 security = HTTPBearer()
 db_dependency_instance = get_db_dependency()
@@ -18,13 +17,45 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+async def get_user_repository(
+    session: AsyncSession = Depends(get_db_session)
+) -> UserRepository:
+    """Dependency для UserRepository"""
+    return UserRepository(session)
+
+
+async def get_user_service(
+    user_repo: UserRepository = Depends(get_user_repository)
+) -> UserService:
+    """Dependency для UserService"""
+    return UserService(user_repo)
+
+
+async def get_auth_service(
+    user_service: UserService = Depends(get_user_service)
+) -> AuthService:
+    """Dependency для AuthService"""
+    return AuthService(user_service)
+
+
 async def get_current_user(
         credentials: HTTPAuthorizationCredentials = Depends(security),
-        session: AsyncSession = Depends(get_db_session)
+        auth_service: AuthService = Depends(get_auth_service)
 ) -> User:
-    auth_service = AuthService(session)
+    """
+    Получить текущего пользователя из токена
+    
+    Args:
+        credentials: HTTP авторизационные данные
+        auth_service: Сервис аутентификации
+        
+    Returns:
+        User: Текущий пользователь
+        
+    Raises:
+        HTTPException: Если токен невалидный или пользователь не найден
+    """
     token = credentials.credentials
-
     result = await auth_service.verify_token(token)
 
     if not result:
@@ -44,6 +75,15 @@ async def get_current_user(
     return user
 
 def require_role(required_role: UserRole):
+    """
+    Dependency для проверки роли пользователя
+    
+    Args:
+        required_role: Требуемая роль
+        
+    Returns:
+        Функция-проверка роли
+    """
     async def role_checker(
         current_user: User = Depends(get_current_user)
     ) -> User:
