@@ -122,7 +122,10 @@ class OrderService:
             raise NotFoundError(f"Product {data.product_id} not found in order {data.order_id}")
 
         # Проверяем бизнес-правила
-        self._validate_order_update(product, data.quantity)
+        difference = data.quantity - existing_item.product_quantity
+        if difference < 0:
+            difference = 0
+        self._validate_order_update(product, difference)
 
         # Применяем изменения
         self._apply_order_changes(existing_item, product, order, data.quantity)

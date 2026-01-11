@@ -32,10 +32,7 @@ class UserService:
         Returns:
             User или None, если пользователь не найден
         """
-        user = await self.user_repo.get_by_id(user_id)
-        if user is None:
-            raise NotFoundError(f"User with id {user_id} not found")
-        return user
+        return await self.user_repo.get_by_id(user_id)
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """
@@ -47,10 +44,7 @@ class UserService:
         Returns:
             User или None, если пользователь не найден
         """
-        user = await self.user_repo.get_by_email(email)
-        if user is None:
-            raise NotFoundError(f"User with email {email} not found")
-        return user
+        return await self.user_repo.get_by_email(email)
 
     async def get_user_by_username(self, username: str) -> Optional[User]:
         """
@@ -62,10 +56,7 @@ class UserService:
         Returns:
             User или None, если пользователь не найден
         """
-        user = await self.user_repo.get_by_username(username)
-        if user is None:
-            raise NotFoundError(f"User with username {username} not found")
-        return user
+        return await self.user_repo.get_by_username(username)
 
     async def get_all_users(self, skip: int = 0, limit: int = 100) -> List[User]:
         """
@@ -78,10 +69,7 @@ class UserService:
         Returns:
             Список пользователей
         """
-        users = await self.user_repo.get_all(skip, limit)
-        if users is None:
-            raise NotFoundError("Users not found")
-        return users
+        return await self.user_repo.get_all(skip, limit)
 
     async def create_user(self, user_data: UserCreate) -> User:
         """

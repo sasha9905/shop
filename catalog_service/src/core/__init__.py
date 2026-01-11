@@ -1,4 +1,5 @@
 from src.core.dependencies import *
+from src.core.logging_config import logger
 
 __all__ = [
     "get_db_session",
@@ -10,4 +11,6 @@ __all__ = [
     "get_product_service",
     "get_current_user",
     "get_current_admin",
+
+    "logger",
 ]

@@ -48,6 +48,9 @@ async def register(
         )
         return user
 
+    except NotFoundError as e:
+        logger.warning(f"User logging is failed: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
     except AlreadyExistError as e:
         logger.warning(f"User creating is failed: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))

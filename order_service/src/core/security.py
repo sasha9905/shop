@@ -17,7 +17,7 @@ async def verify_token_with_auth_service(token: str) -> dict:
         try:
             logger.info("Token received, sending to auth service for verification")
             response = await client.post(
-                "http://localhost:8000/api/v1/auth/verify",
+                "http://auth_service:8000/api/v1/auth/verify",
                 params={"token": token}
             )
             logger.info("Response received from auth service")
